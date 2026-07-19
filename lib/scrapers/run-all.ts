@@ -100,11 +100,8 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
             });
             if (existing) continue;
 
-            const { isMatch, isTargetCity, matchedKeywords } = matchJob(
-              job.title,
-              job.location,
-              job.employmentType
-            );
+            const { isMatch, isTargetCity, periodStatus, matchedKeywords } =
+              matchJob(job.title, job.location, job.employmentType);
 
             await db.insert(jobPostings).values({
               companyId: companyRow.id,
@@ -118,15 +115,17 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
               matchedKeywords,
               isMatch,
               isTargetCity,
+              periodStatus,
             });
 
             newJobs++;
             if (isMatch) {
               newMatches++;
-              // On ne notifie que les stages dans les villes ciblees:
-              // le tableau garde tout pour visibilite, mais le push ne
-              // doit pas alerter pour un stage a Singapour ou Sao Paulo.
-              if (isTargetCity) {
+              // On ne notifie que les stages dans les villes ciblees et
+              // dont la periode n'est pas explicitement incompatible: le
+              // tableau garde tout pour visibilite, mais le push ne doit
+              // pas alerter pour un stage a Singapour ou en septembre 2026.
+              if (isTargetCity && periodStatus !== "incompatible") {
                 newMatchedJobs.push({
                   title: job.title,
                   company: company.name,

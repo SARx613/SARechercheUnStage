@@ -22,6 +22,7 @@ interface JobRow {
   matchedKeywords: string[] | null;
   isMatch: boolean;
   isTargetCity: boolean;
+  periodStatus: "compatible" | "incompatible" | "unknown";
   companyName: string;
   companyCategory: string;
   status: string | null;
@@ -57,6 +58,7 @@ export default function JobsTable() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [cityFilter, setCityFilter] = useState<string>("target");
   const [matchOnly, setMatchOnly] = useState(true);
+  const [hidePastPeriod, setHidePastPeriod] = useState(true);
   const [search, setSearch] = useState("");
 
   const CITY_FILTERS: { value: string; label: string; terms: string[] }[] = [
@@ -87,6 +89,7 @@ export default function JobsTable() {
   const filteredJobs = useMemo(() => {
     return jobs.filter((j) => {
       if (matchOnly && !j.isMatch) return false;
+      if (hidePastPeriod && j.periodStatus === "incompatible") return false;
       if (categoryFilter !== "all" && j.companyCategory !== categoryFilter)
         return false;
       if (cityFilter === "target" && !j.isTargetCity) return false;
@@ -101,7 +104,7 @@ export default function JobsTable() {
       }
       return true;
     });
-  }, [jobs, matchOnly, categoryFilter, cityFilter, search]);
+  }, [jobs, matchOnly, hidePastPeriod, categoryFilter, cityFilter, search]);
 
   const columns = useMemo(
     () => [
@@ -131,6 +134,24 @@ export default function JobsTable() {
       columnHelper.accessor("employmentType", {
         header: "Type",
         cell: (info) => info.getValue() ?? "—",
+      }),
+      columnHelper.accessor("periodStatus", {
+        header: "Période",
+        cell: (info) => {
+          const status = info.getValue();
+          if (status === "compatible") {
+            return (
+              <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                Jan–Juin 2027
+              </span>
+            );
+          }
+          return (
+            <span className="rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-500">
+              Date à confirmer
+            </span>
+          );
+        },
       }),
       columnHelper.accessor("firstSeenAt", {
         header: "Vu le",
@@ -230,6 +251,15 @@ export default function JobsTable() {
           />
           Stages uniquement
         </label>
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            checked={hidePastPeriod}
+            onChange={(e) => setHidePastPeriod(e.target.checked)}
+            className="accent-[#367afd]"
+          />
+          Masquer les périodes incompatibles
+        </label>
         <span className="ml-auto text-sm text-neutral-400">
           {filteredJobs.length} offre{filteredJobs.length !== 1 ? "s" : ""}
         </span>
@@ -273,7 +303,7 @@ export default function JobsTable() {
             ))}
             {table.getRowModel().rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-neutral-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-neutral-400">
                   Aucune offre pour l&apos;instant — le premier scrape n&apos;a peut-être pas encore tourné.
                 </td>
               </tr>

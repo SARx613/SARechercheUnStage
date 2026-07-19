@@ -1,0 +1,1 @@
+ALTER TABLE "job_postings" ADD COLUMN "period_status" varchar(20) DEFAULT 'unknown' NOT NULL;
