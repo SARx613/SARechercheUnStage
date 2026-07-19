@@ -79,11 +79,11 @@ export default function PushToggle() {
       disabled={pending}
       className={`rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-50 ${
         subscribed
-          ? "bg-emerald-900 text-emerald-200 hover:bg-emerald-800"
-          : "bg-sky-600 text-white hover:bg-sky-500"
+          ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+          : "bg-[#367afd] text-white hover:bg-[#2b66d9]"
       }`}
     >
-      {subscribed ? "🔔 Notifications activées" : "Activer les notifications"}
+      {subscribed ? "Notifications activées" : "Activer les notifications"}
     </button>
   );
 }

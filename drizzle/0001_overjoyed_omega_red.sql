@@ -1,0 +1,1 @@
+ALTER TABLE "job_postings" ADD COLUMN "is_target_city" boolean DEFAULT false NOT NULL;

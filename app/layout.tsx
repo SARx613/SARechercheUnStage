@@ -16,6 +16,19 @@ export const metadata: Metadata = {
   title: "Stage Tracker",
   description: "Veille des offres de stage janvier-juin 2027",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Stage Tracker",
+  },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+  },
+};
+
+export const viewport = {
+  themeColor: "#131a28",
 };
 
 export default function RootLayout({
@@ -28,7 +41,7 @@ export default function RootLayout({
       lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-950">
+      <body className="min-h-full flex flex-col bg-neutral-50">
         {children}
         <script
           dangerouslySetInnerHTML={{

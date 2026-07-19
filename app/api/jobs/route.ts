@@ -15,6 +15,7 @@ export async function GET() {
       employmentType: jobPostings.employmentType,
       matchedKeywords: jobPostings.matchedKeywords,
       isMatch: jobPostings.isMatch,
+      isTargetCity: jobPostings.isTargetCity,
       companyName: companies.name,
       companyCategory: companies.category,
       status: applicationStatus.status,
