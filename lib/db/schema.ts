@@ -41,6 +41,9 @@ export const jobPostings = pgTable(
     matchedKeywords: text("matched_keywords").array(),
     isMatch: boolean("is_match").notNull().default(false),
     isTargetCity: boolean("is_target_city").notNull().default(false),
+    periodStatus: varchar("period_status", { length: 20 })
+      .notNull()
+      .default("unknown"),
   },
   (t) => [uniqueIndex("company_external_id_idx").on(t.companyId, t.externalId)]
 );
