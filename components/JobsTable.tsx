@@ -21,6 +21,7 @@ interface JobRow {
   employmentType: string | null;
   matchedKeywords: string[] | null;
   isMatch: boolean;
+  isTargetCity: boolean;
   companyName: string;
   companyCategory: string;
   status: string | null;
@@ -37,12 +38,12 @@ const STATUS_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  a_voir: "bg-slate-700 text-slate-200",
-  postule: "bg-sky-700 text-sky-100",
-  relance: "bg-amber-700 text-amber-100",
-  entretien: "bg-violet-700 text-violet-100",
-  refuse: "bg-red-900 text-red-200",
-  accepte: "bg-emerald-700 text-emerald-100",
+  a_voir: "bg-neutral-100 text-neutral-700",
+  postule: "bg-blue-50 text-blue-700",
+  relance: "bg-amber-50 text-amber-700",
+  entretien: "bg-violet-50 text-violet-700",
+  refuse: "bg-red-50 text-red-700",
+  accepte: "bg-emerald-50 text-emerald-700",
 };
 
 const columnHelper = createColumnHelper<JobRow>();
@@ -54,7 +55,7 @@ export default function JobsTable() {
     { id: "firstSeenAt", desc: true },
   ]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [cityFilter, setCityFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("target");
   const [matchOnly, setMatchOnly] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -88,10 +89,11 @@ export default function JobsTable() {
       if (matchOnly && !j.isMatch) return false;
       if (categoryFilter !== "all" && j.companyCategory !== categoryFilter)
         return false;
-      if (cityFilter !== "all") {
+      if (cityFilter === "target" && !j.isTargetCity) return false;
+      if (cityFilter !== "all" && cityFilter !== "target") {
         const cityDef = CITY_FILTERS.find((c) => c.value === cityFilter);
-        const location = (j.location ?? "").toLowerCase();
-        if (!cityDef?.terms.some((t) => location.includes(t))) return false;
+        const haystack = `${j.title} ${j.location ?? ""}`.toLowerCase();
+        if (!cityDef?.terms.some((t) => haystack.includes(t))) return false;
       }
       if (search) {
         const haystack = `${j.title} ${j.companyName} ${j.location ?? ""}`.toLowerCase();
@@ -106,7 +108,7 @@ export default function JobsTable() {
       columnHelper.accessor("companyName", {
         header: "Entreprise",
         cell: (info) => (
-          <span className="font-medium text-slate-100">{info.getValue()}</span>
+          <span className="font-medium text-[#131a28]">{info.getValue()}</span>
         ),
       }),
       columnHelper.accessor("title", {
@@ -116,7 +118,7 @@ export default function JobsTable() {
             href={info.row.original.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sky-400 hover:underline"
+            className="text-[#367afd] hover:underline"
           >
             {info.getValue()}
           </a>
@@ -178,7 +180,7 @@ export default function JobsTable() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center text-slate-400">
+      <div className="flex-1 flex items-center justify-center text-neutral-500">
         Chargement...
       </div>
     );
@@ -192,12 +194,12 @@ export default function JobsTable() {
           placeholder="Rechercher (poste, entreprise, ville)..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-500 min-w-64"
+          className="min-w-64 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-[#131a28] outline-none transition focus:border-[#367afd] focus:ring-2 focus:ring-[#367afd]/20"
         />
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none"
+          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-[#131a28] outline-none"
         >
           <option value="all">Toutes catégories</option>
           {categories.map((c) => (
@@ -209,38 +211,40 @@ export default function JobsTable() {
         <select
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
-          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none"
+          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-[#131a28] outline-none"
         >
-          <option value="all">Toutes les villes</option>
+          <option value="target">Paris / Londres / NY / Tel Aviv</option>
           {CITY_FILTERS.map((c) => (
             <option key={c.value} value={c.value}>
               {c.label}
             </option>
           ))}
+          <option value="all">Toutes les villes</option>
         </select>
-        <label className="flex items-center gap-2 text-sm text-slate-300">
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
           <input
             type="checkbox"
             checked={matchOnly}
             onChange={(e) => setMatchOnly(e.target.checked)}
+            className="accent-[#367afd]"
           />
           Stages uniquement
         </label>
-        <span className="ml-auto text-sm text-slate-500">
+        <span className="ml-auto text-sm text-neutral-400">
           {filteredJobs.length} offre{filteredJobs.length !== 1 ? "s" : ""}
         </span>
       </div>
 
-      <div className="flex-1 overflow-auto rounded-xl border border-slate-800">
+      <div className="flex-1 overflow-auto rounded-xl border border-neutral-200 bg-white shadow-sm">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-slate-900">
+          <thead className="sticky top-0 bg-neutral-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
-                    className="cursor-pointer select-none border-b border-slate-800 px-4 py-3 text-left font-medium text-slate-400"
+                    className="cursor-pointer select-none border-b border-neutral-200 px-4 py-3 text-left font-medium text-neutral-500"
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -258,10 +262,10 @@ export default function JobsTable() {
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-slate-900 hover:bg-slate-900/50"
+                className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3">
+                  <td key={cell.id} className="px-4 py-3 text-neutral-700">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -269,7 +273,7 @@ export default function JobsTable() {
             ))}
             {table.getRowModel().rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-neutral-400">
                   Aucune offre pour l&apos;instant — le premier scrape n&apos;a peut-être pas encore tourné.
                 </td>
               </tr>

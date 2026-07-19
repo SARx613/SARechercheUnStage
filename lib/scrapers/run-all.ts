@@ -100,7 +100,7 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
             });
             if (existing) continue;
 
-            const { isMatch, matchedKeywords } = matchJob(
+            const { isMatch, isTargetCity, matchedKeywords } = matchJob(
               job.title,
               job.location,
               job.employmentType
@@ -117,16 +117,22 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
               raw: job.raw,
               matchedKeywords,
               isMatch,
+              isTargetCity,
             });
 
             newJobs++;
             if (isMatch) {
               newMatches++;
-              newMatchedJobs.push({
-                title: job.title,
-                company: company.name,
-                url: job.url,
-              });
+              // On ne notifie que les stages dans les villes ciblees:
+              // le tableau garde tout pour visibilite, mais le push ne
+              // doit pas alerter pour un stage a Singapour ou Sao Paulo.
+              if (isTargetCity) {
+                newMatchedJobs.push({
+                  title: job.title,
+                  company: company.name,
+                  url: job.url,
+                });
+              }
             }
           }
 
