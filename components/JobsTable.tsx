@@ -54,8 +54,16 @@ export default function JobsTable() {
     { id: "firstSeenAt", desc: true },
   ]);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [cityFilter, setCityFilter] = useState<string>("all");
   const [matchOnly, setMatchOnly] = useState(true);
   const [search, setSearch] = useState("");
+
+  const CITY_FILTERS: { value: string; label: string; terms: string[] }[] = [
+    { value: "paris", label: "Paris", terms: ["paris"] },
+    { value: "london", label: "Londres", terms: ["london", "londres"] },
+    { value: "nyc", label: "New York", terms: ["new york", "nyc"] },
+    { value: "telaviv", label: "Tel Aviv", terms: ["tel aviv", "tel-aviv"] },
+  ];
 
   useEffect(() => {
     fetch("/api/jobs")
@@ -80,13 +88,18 @@ export default function JobsTable() {
       if (matchOnly && !j.isMatch) return false;
       if (categoryFilter !== "all" && j.companyCategory !== categoryFilter)
         return false;
+      if (cityFilter !== "all") {
+        const cityDef = CITY_FILTERS.find((c) => c.value === cityFilter);
+        const location = (j.location ?? "").toLowerCase();
+        if (!cityDef?.terms.some((t) => location.includes(t))) return false;
+      }
       if (search) {
         const haystack = `${j.title} ${j.companyName} ${j.location ?? ""}`.toLowerCase();
         if (!haystack.includes(search.toLowerCase())) return false;
       }
       return true;
     });
-  }, [jobs, matchOnly, categoryFilter, search]);
+  }, [jobs, matchOnly, categoryFilter, cityFilter, search]);
 
   const columns = useMemo(
     () => [
@@ -190,6 +203,18 @@ export default function JobsTable() {
           {categories.map((c) => (
             <option key={c} value={c}>
               {c}
+            </option>
+          ))}
+        </select>
+        <select
+          value={cityFilter}
+          onChange={(e) => setCityFilter(e.target.value)}
+          className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none"
+        >
+          <option value="all">Toutes les villes</option>
+          {CITY_FILTERS.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
             </option>
           ))}
         </select>
