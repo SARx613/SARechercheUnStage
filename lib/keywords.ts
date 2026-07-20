@@ -86,6 +86,14 @@ const INCOMPATIBLE_MONTHS = [
 // meme si l'annee 2027 est mentionnee.
 const SUMMER_TERMS = ["summer", "été", "ete "];
 
+// "Off-cycle" designe un stage de 3-6 mois demarrant hors de la saison
+// estivale classique (souvent janvier, parfois fevrier/mars selon la
+// division) -> bon signal de compatibilite avec jan-juin 2027, mais la
+// date de demarrage exacte varie par division/localisation donc ce n'est
+// PAS une certitude: on l'utilise pour faire pencher un "unknown" vers
+// "compatible" plutot que pour ecraser une annee/mois deja detectee.
+const OFF_CYCLE_TERMS = ["off-cycle", "off cycle"];
+
 export type PeriodStatus = "compatible" | "incompatible" | "unknown";
 
 function findMatches(text: string, terms: string[]): string[] {
@@ -126,24 +134,27 @@ export function classifyPeriod(title: string): PeriodStatus {
   const hasYear2027 = lower.includes("2027");
   const hasYear2026 = lower.includes("2026");
   const hasYear2025 = lower.includes("2025");
+  const hasOtherYear = hasYear2025 || hasYear2026;
   const isSummer = containsAny(lower, SUMMER_TERMS);
+  const isOffCycle = containsAny(lower, OFF_CYCLE_TERMS);
   const compatibleMonth = findMatches(lower, COMPATIBLE_MONTHS).length > 0;
   const incompatibleMonth = findMatches(lower, INCOMPATIBLE_MONTHS).length > 0;
 
-  // Annee clairement passee ou trop lointaine sans annee 2027 associee.
-  if ((hasYear2025 || (hasYear2026 && !hasYear2027)) && !hasYear2027) {
-    // 2026 seul reste ambigu (ex: "Janvier 2026" pourrait glisser vers
-    // fev 2027 en pratique) mais on suit le titre tel quel: si le mois
-    // associe est incompatible ou si c'est explicitement 2025, on exclut.
-    if (hasYear2025) return "incompatible";
-    if (incompatibleMonth) return "incompatible";
-    if (compatibleMonth) return "incompatible"; // "Janvier 2026" != "Janvier 2027"
-  }
+  // Annee clairement passee ou trop lointaine sans annee 2027 associee:
+  // peu importe qu'un mois soit mentionne ou non, "2026"/"2025" seuls
+  // signifient que ce cycle precis ne tombe pas sur jan-juin 2027.
+  if (hasOtherYear && !hasYear2027) return "incompatible";
 
   if (isSummer && !compatibleMonth) return "incompatible";
   if (incompatibleMonth && !compatibleMonth) return "incompatible";
 
   if (hasYear2027 || compatibleMonth) return "compatible";
+
+  // Pas de date explicite, mais "off-cycle" est un bon indice de stage
+  // 3-6 mois hors saison estivale (souvent demarrage janvier) -> on
+  // penche vers compatible plutot que de le laisser en simple "unknown",
+  // meme si la date precise reste a verifier au cas par cas.
+  if (isOffCycle) return "compatible";
 
   return "unknown";
 }
