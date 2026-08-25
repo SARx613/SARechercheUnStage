@@ -5,8 +5,8 @@ la finance quantitative, les banques d'investissement, l'asset/wealth
 management et le conseil, sur Paris, Londres, New York et Tel Aviv.
 
 Chaque jour, un cron Vercel interroge directement les APIs publiques des
-plateformes de recrutement (Greenhouse, Lever, Workday, Comeet) de ~25
-entreprises cibles, détecte les nouvelles offres de stage et notifie
+plateformes de recrutement (Greenhouse, Lever, Workday, Comeet, TopMatch) de
+~76 entreprises cibles, détecte les nouvelles offres de stage et notifie
 l'utilisateur en push (PWA) — pas besoin de vérifier chaque site à la main.
 
 **Production** : https://job-tracker-ashy-beta.vercel.app
@@ -22,24 +22,47 @@ l'utilisateur en push (PWA) — pas besoin de vérifier chaque site à la main.
 
 ## Fonctionnement du scraping
 
-23 entreprises sont scrapées automatiquement via API JSON publique (pas de
+37 entreprises sont scrapées automatiquement via API JSON publique (pas de
 scraping HTML fragile) :
 
 | ATS | Entreprises (exemples) |
 |---|---|
-| Greenhouse | Jane Street, QRT, Point72, Optiver, Jump Trading, DRW, Hudson River Trading, Man Group... |
+| Greenhouse | Jane Street, QRT, Point72, Optiver, Jump Trading, DRW, Hudson River Trading, Man Group, Riskified, Forter, Fireblocks, Payoneer... |
 | Lever | Palantir |
 | Workday | Morgan Stanley, Barclays, Deutsche Bank, BlackRock, PIMCO, Rothschild & Co, Oliver Wyman, Citi, WorldQuant |
-| Comeet | eToro |
+| Comeet | Final, Israel Discount Bank, Plus500, eToro |
+| TopMatch | Altshuler Shaham, Meitav, Analyst IMS, Migdal |
+
+### Comeet : le token public est obligatoire
+
+L'API Comeet répond `400 "Token is missing"` si on ne lui passe pas le token
+public de l'entreprise, et attend l'**uid** interne (`C0.009`) et non le slug
+lisible de l'URL. Les deux se relisent dans le HTML de
+`www.comeet.com/jobs/<slug>/<uid>` (champ `token`), ou dans le JS du
+mini-site carrière quand l'entreprise l'héberge elle-même (Plus500).
+
+### TopMatch (redmatch) : l'ATS des maisons d'investissement israéliennes
+
+`careers.topmatch.co.il` expose une API candidat publique non documentée :
+`POST /CandidateAPI/api/position/Search/<affiliateGUID>` avec un corps
+`{ KeyWords, CategoryId, countryId: 2, cityId }`. L'`affiliateGUID` de chaque
+tenant est lisible en clair dans
+`careers.topmatch.co.il/<Tenant>/redmatch.settings.js`. Attention : l'API
+répond `200` avec un `responseStatus` non nul en cas d'erreur métier, d'où la
+vérification explicite dans [`lib/scrapers/topmatch.ts`](lib/scrapers/topmatch.ts).
 
 La liste complète, avec les identifiants techniques (board token, tenant
 Workday, etc.), est dans [`lib/companies.ts`](lib/companies.ts).
 
-22 autres entreprises (McKinsey, BCG, Bain, Goldman Sachs, J.P. Morgan,
-Citadel, D.E. Shaw, Two Sigma, BNP Paribas, Société Générale...) n'ont pas
-d'API JSON publique fiable (Taleo, Talentsoft, sites propriétaires JS-lourds).
-Elles restent listées avec leur lien direct mais hors du cron automatique —
-volontairement, pour ne pas dépendre d'un service de scraping tiers payant.
+39 autres entreprises (McKinsey, BCG, Bain, Goldman Sachs, J.P. Morgan,
+Citadel, D.E. Shaw, Two Sigma, BNP Paribas, Société Générale, Bank Leumi,
+Bank Hapoalim, Bank of Israel, TASE...) n'ont pas d'API JSON publique fiable
+(Taleo, Talentsoft, SPA maison JS-lourdes). Elles restent listées avec leur
+lien direct mais hors du cron automatique — volontairement, pour ne pas
+dépendre d'un service de scraping tiers payant. Leur `careersUrl` pointe vers
+la vue la plus précise disponible, et directement sur les postes étudiants
+quand le site accepte un filtre en paramètre d'URL (cas de la Bank of Israel,
+qui tourne sur SuccessFactors).
 
 ### Détection des offres de stage
 
@@ -52,8 +75,26 @@ scraper extrait le signal le plus structuré disponible sur sa plateforme :
 - **Greenhouse** : champ `metadata` (`Employment Type`, `Duration`, ou
   `Workflow` selon l'entreprise).
 - **Lever** : champ `categories.commitment`.
+- **Comeet** : `employment_type` **et** `experience_level` concaténés — une
+  offre `experience_level="Student"` mais `employment_type="Part-time"` est
+  bien un job étudiant.
+- **TopMatch** : aucun champ de type de contrat → repli sur le titre.
 
-Le titre reste un filet de sécurité en repli. Voir
+Le titre reste un filet de sécurité en repli.
+
+#### Offres israéliennes
+
+Les offres israéliennes sont rédigées en hébreu et ne contiennent jamais
+« intern » ni « stage » : [`lib/keywords.ts`](lib/keywords.ts) reconnaît donc
+`סטודנט` (étudiant), `מתמחה` (stagiaire) et `התמחות` (stage). La racine
+`סטודנט` couvre par sous-chaîne toutes les formes de l'écriture inclusive
+israélienne (`סטודנט/ית`, `סטודנט/סטודנטית`...).
+
+Côté villes, la finance israélienne déborde largement de Tel Aviv (Meitav à
+Bnei Brak, ION à Herzliya, Discount à Rishon LeZion, la Bank of Israel à
+Jérusalem) : l'agglomération entière est dans `CITY_TERMS`, en translittéré
+et en hébreu. Les intitulés étant saisis à la main, la comparaison aplatit
+au préalable les espaces multiples (vu chez Analyst IMS : `"תל  אביב"`). Voir
 [`lib/keywords.ts`](lib/keywords.ts) et [`lib/scrapers/`](lib/scrapers/).
 
 ## Développement local
@@ -99,7 +140,7 @@ app/
   login/                # page de connexion par mot de passe
 proxy.ts                # protège toutes les routes sauf /login et /api/cron
 lib/
-  companies.ts          # config des ~45 entreprises cibles
+  companies.ts          # config des 76 entreprises cibles
   keywords.ts            # logique de matching stage/ville
   scrapers/               # un module par type d'ATS
   db/                      # schéma Drizzle + client Neon
@@ -114,7 +155,9 @@ public/
 
 ## Limitations connues
 
-- eToro (Comeet) renvoie actuellement une erreur 400 — l'endpoint a
-  probablement changé de format.
 - Les entreprises `ats: "manual"` dans `lib/companies.ts` ne sont pas
   scrapées automatiquement (voir plus haut).
+- Le tenant TopMatch de Migdal est valide mais renvoie 0 offre pour l'instant.
+- Les tokens Comeet et les `affiliateGUID` TopMatch sont publics mais figés
+  en dur : si une entreprise régénère le sien, son scraper tombera en erreur
+  (visible dans `scrape_runs`) et il faudra le relire sur sa page carrière.

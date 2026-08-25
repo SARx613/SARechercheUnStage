@@ -3,6 +3,7 @@ export type AtsType =
   | "lever"
   | "workday"
   | "comeet"
+  | "topmatch"
   | "html_static"
   | "manual";
 
@@ -39,8 +40,31 @@ export interface WorkdayCompany extends BaseCompany {
 
 export interface ComeetCompany extends BaseCompany {
   ats: "comeet";
+  /** Slug lisible dans l'URL publique (www.comeet.com/jobs/<slug>/<uid>). */
   companyId: string;
-  uid?: string;
+  /** Identifiant reel attendu par l'API (ex: "C0.009") — PAS le slug. */
+  uid: string;
+  /**
+   * Token public embarque dans la page carriere de l'entreprise. L'API
+   * Comeet le refuse en son absence (HTTP 400 "Token is missing") — c'est
+   * ce qui cassait le scraper eToro. Se relit dans le HTML de
+   * www.comeet.com/jobs/<slug>/<uid> (champ "token") si l'entreprise le
+   * fait tourner.
+   */
+  token: string;
+}
+
+/**
+ * TopMatch (redmatch) — ATS israelien utilise par plusieurs bourses
+ * d'investissement (Altshuler Shaham, Meitav, Analyst, Migdal). API JSON
+ * publique, un POST par tenant identifie par son affiliateGUID (lisible
+ * dans careers.topmatch.co.il/<Tenant>/redmatch.settings.js).
+ */
+export interface TopmatchCompany extends BaseCompany {
+  ats: "topmatch";
+  affiliateGuid: string;
+  /** Slug du mini-site carriere, sert a reconstruire l'URL d'une offre. */
+  tenant: string;
 }
 
 export interface HtmlStaticCompany extends BaseCompany {
@@ -62,6 +86,7 @@ export type Company =
   | LeverCompany
   | WorkdayCompany
   | ComeetCompany
+  | TopmatchCompany
   | HtmlStaticCompany
   | ManualCompany;
 
@@ -100,7 +125,7 @@ export const COMPANIES: Company[] = [
   { slug: "worldquant", name: "WorldQuant (Tel Aviv)", category: "tel_aviv", ats: "workday", tenant: "mlp", wd: "wd5", site: "mlpcareers", careersUrl: "https://mlp.wd5.myworkdayjobs.com/mlpcareers" },
 
   // ---- COMEET ----
-  { slug: "etoro", name: "eToro", category: "tel_aviv", ats: "comeet", companyId: "etoro", uid: "41.009", careersUrl: "https://www.comeet.com/jobs/etoro/41.009" },
+  { slug: "etoro", name: "eToro", category: "tel_aviv", ats: "comeet", companyId: "etoro", uid: "41.009", token: "14952452466D3DB7B61495240B91", careersUrl: "https://www.comeet.com/jobs/etoro/41.009" },
 
   // ---- MANUAL (pas d'API JSON fiable, pas de scraping full-JS automatisé) ----
   { slug: "mckinsey", name: "McKinsey", category: "conseil_tech", ats: "manual", careersUrl: "https://www.mckinsey.com/careers/search-jobs" },
@@ -115,7 +140,6 @@ export const COMPANIES: Company[] = [
   { slug: "de-shaw", name: "D.E. Shaw", category: "quant", ats: "manual", careersUrl: "https://www.deshaw.com/careers" },
   { slug: "sig", name: "SIG (Susquehanna)", category: "quant", ats: "manual", careersUrl: "https://careers.sig.com/jobs" },
   { slug: "cfm", name: "Capital Fund Management (CFM)", category: "quant", ats: "manual", careersUrl: "https://jobs.cfm.com" },
-  { slug: "final", name: "Final", category: "tel_aviv", ats: "manual", careersUrl: "https://www.final.co.il/career/" },
   { slug: "jpmorgan", name: "J.P. Morgan", category: "banque", ats: "manual", careersUrl: "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions" },
   { slug: "goldman-sachs", name: "Goldman Sachs", category: "banque", ats: "manual", careersUrl: "https://higher.gs.com/results" },
   { slug: "bank-of-america", name: "Bank of America", category: "banque", ats: "manual", careersUrl: "https://bankcampuscareers.tal.net" },
@@ -125,6 +149,81 @@ export const COMPANIES: Company[] = [
   { slug: "lazard", name: "Lazard", category: "banque", ats: "manual", careersUrl: "https://lazard-careers.tal.net/candidate" },
   { slug: "amundi", name: "Amundi", category: "asset_management", ats: "manual", careersUrl: "https://jobs.amundi.com/offre-de-emploi/liste-offres.aspx" },
   { slug: "schroders", name: "Schroders", category: "asset_management", ats: "manual", careersUrl: "https://schroders.referrals.selectminds.com/careers" },
+
+  // =====================================================================
+  // ISRAEL — finance, quant et hedge funds
+  // ---------------------------------------------------------------------
+  // Toutes ces entreprises ont ete verifiees site par site. Les URLs
+  // pointent vers la section "offres" la plus precise disponible, et quand
+  // le site accepte un filtre par URL (cas de SuccessFactors chez Bank of
+  // Israel), directement sur les postes etudiants.
+  // Beaucoup de sites institutionnels israeliens (banques, assureurs) sont
+  // des SPA maison sans API JSON -> ats "manual", comme pour McKinsey & co.
+  // =====================================================================
+
+  // ---- QUANT / PROP TRADING / HFT ISRAELIENS ----
+  // Final: le prop shop historique israelien (Herzliya, ~150 personnes,
+  // offre de rachat a 4 Md$ refusee en 2014). Etait en "manual" ici, mais
+  // sa page carriere tourne en fait sur Comeet.
+  { slug: "final", name: "Final", category: "quant", ats: "comeet", companyId: "final", uid: "C0.009", token: "C9324192025B6483EDC971125B", careersUrl: "https://www.comeet.com/jobs/final/C0.009" },
+  // Barak: market maker officiel sur plusieurs bourses, systeme de trading
+  // latency-sensitive maison. Poste "Junior Trader" a Tel Aviv ouvert aux
+  // profils STEM/eco juste diplomes -> la porte d'entree junior.
+  { slug: "barak-capital", name: "Barak Capital Market Making", category: "quant", ats: "manual", careersUrl: "https://barakmarketmaking.com/careers/", note: "Candidatures via formulaires externes (nmbrshire / forms.app) ou cv@barakcapital.com. Viser le poste 'Junior Trader' (Tel Aviv)." },
+  // Efficient Frontier: HFT crypto (>1 Md$ de volume/semaine), fondee par
+  // des anciens du HFT traditionnel. Pas de page /careers propre: le lien
+  // "Careers" du site renvoie vers leurs offres LinkedIn.
+  { slug: "efficient-frontier", name: "Efficient Frontier", category: "quant", ats: "manual", careersUrl: "https://www.linkedin.com/company/efficientfrontier/jobs/", note: "Le site efrontier.io renvoie ses offres vers LinkedIn. Contact direct: info@efrontier.io." },
+  // Solidus: algo trading (Tel Aviv / Amsterdam / Gibraltar), poste
+  // "Quant Algorithms Developer" recurrent a Tel Aviv.
+  { slug: "solidus", name: "Solidus", category: "quant", ats: "manual", careersUrl: "https://www.solidus-tech.com/careers/", note: "Pas de poste etudiant affiche; ils invitent a envoyer un CV spontane." },
+
+  // ---- HEDGE FUNDS ISRAELIENS ----
+  // ION: ~2 Md$ d'AUM, cinq strategies (long/short, tech, macro, crossover, PE).
+  { slug: "ion-asset-management", name: "ION Asset Management", category: "quant", ats: "manual", careersUrl: "https://www.ion-am.com/careers", note: "Candidature par email a jobs@ion-am.com (objet = intitule du poste). Candidatures spontanees explicitement acceptees." },
+  // Sphera: gerant long/short equity israelien de reference (fonde en 2004).
+  { slug: "sphera-funds", name: "Sphera Funds Management", category: "quant", ats: "manual", careersUrl: "https://spherafund.com/contact-us/", note: "Pas de page carriere publique: passer par le formulaire de contact." },
+  // Silver Castle: gestion alternative (dont fonds bitcoin), cotee au TASE.
+  { slug: "silver-castle", name: "Silver Castle", category: "quant", ats: "manual", careersUrl: "https://silvercl.com/", note: "Pas de page carriere publique: contact via le site." },
+
+  // ---- BANQUES ISRAELIENNES & INFRASTRUCTURE DE MARCHE ----
+  // Bank of Israel: la banque centrale tourne sur SuccessFactors, dont la
+  // recherche accepte un mot-cle en parametre d'URL -> on pointe direct sur
+  // les postes etudiants. La division Recherche (analyse monetaire,
+  // economie reelle) recrute des etudiants: le profil le plus quant du lot.
+  { slug: "bank-of-israel", name: "Bank of Israel", category: "banque", ats: "manual", careersUrl: "https://careers.boi.org.il/search/?q=%D7%A1%D7%98%D7%95%D7%93%D7%A0%D7%98", note: "URL deja filtree sur 'סטודנט' (etudiant). Viser la חטיבת המחקר (division Recherche) et l'אגף המוניטרי." },
+  // Discount Bank: seule des grandes banques israeliennes a exposer une API
+  // publique (Comeet) -> scrapee automatiquement.
+  { slug: "discount-bank", name: "Israel Discount Bank", category: "banque", ats: "comeet", companyId: "dbank", uid: "F8.004", token: "8F435B847A035B802CC42CC4509447A035B8", careersUrl: "https://www.comeet.com/jobs/dbank/F8.004" },
+  { slug: "bank-leumi", name: "Bank Leumi", category: "banque", ats: "manual", careersUrl: "https://www.leumi.co.il/he/leumi_main/searchjobs", note: "Moteur de recherche maison sans filtre par URL: taper 'סטודנט' dans le champ mot-cle. Leumi donne la priorite aux etudiants." },
+  { slug: "bank-hapoalim", name: "Bank Hapoalim", category: "banque", ats: "manual", careersUrl: "https://www.bankhapoalim.co.il/forms/he/jobs-site/lobby", note: "Postes etudiants recurrents en salle des marches (dealer ni'v zarim) pour etudiants en eco/gestion. Contact: poalim.jobs@poalim.co.il." },
+  { slug: "mizrahi-tefahot", name: "Mizrahi Tefahot", category: "banque", ats: "manual", careersUrl: "https://www.mizrahi-tefahot.co.il/", note: "Section carriere accessible depuis le pied de page; pas d'URL stable." },
+  { slug: "fibi", name: "First International Bank of Israel", category: "banque", ats: "manual", careersUrl: "https://www.fibi.co.il/Career" },
+  { slug: "tase", name: "Tel Aviv Stock Exchange (TASE)", category: "banque", ats: "manual", careersUrl: "https://www.tase.co.il/he/content/career/careers" },
+
+  // ---- MAISONS D'INVESTISSEMENT / GESTION D'ACTIFS ----
+  // Quatre d'entre elles partagent l'ATS israelien TopMatch (redmatch),
+  // qui expose une API JSON publique -> scrapees automatiquement.
+  { slug: "altshuler-shaham", name: "Altshuler Shaham", category: "asset_management", ats: "topmatch", tenant: "AltshulerShaham", affiliateGuid: "15FA3B25-3742-44BC-A785-86EE96CBADCF", careersUrl: "https://careers.topmatch.co.il/AltshulerShaham/" },
+  { slug: "meitav", name: "Meitav", category: "asset_management", ats: "topmatch", tenant: "Meitav", affiliateGuid: "05C69BAD-26F0-48EE-A059-4961B79987F1", careersUrl: "https://careers.topmatch.co.il/Meitav/" },
+  { slug: "analyst-ims", name: "Analyst IMS", category: "asset_management", ats: "topmatch", tenant: "Analyst", affiliateGuid: "48D0F6AE-9E14-4A81-B0DE-4C4A1A185109", careersUrl: "https://careers.topmatch.co.il/Analyst/" },
+  { slug: "migdal", name: "Migdal", category: "asset_management", ats: "topmatch", tenant: "Migdal", affiliateGuid: "E0F5FB5B-82F6-4862-8E00-15A883389347", careersUrl: "https://careers.topmatch.co.il/Migdal/" },
+  { slug: "ibi", name: "IBI Investment House", category: "asset_management", ats: "manual", careersUrl: "https://www.ibi.co.il/career/" },
+  { slug: "psagot", name: "Psagot", category: "asset_management", ats: "manual", careersUrl: "https://www.psagot.co.il/en/careers/" },
+  { slug: "phoenix", name: "The Phoenix (Excellence)", category: "asset_management", ats: "manual", careersUrl: "https://www.fnx.co.il/career/" },
+  // Harel recrute regulierement des etudiants au departement actuariat
+  // (tarification assurance generale) -> profil quantitatif.
+  { slug: "harel", name: "Harel Insurance & Finance", category: "asset_management", ats: "manual", careersUrl: "https://www.harel-group.co.il/careers", note: "Postes etudiants recurrents en actuariat (tarification) — le plus quant chez eux." },
+  { slug: "yelin-lapidot", name: "Yelin Lapidot", category: "asset_management", ats: "manual", careersUrl: "https://www.yl-invest.co.il/wanted/" },
+  { slug: "more-investment", name: "More Investment House", category: "asset_management", ats: "manual", careersUrl: "https://www.moreinvest.co.il/" },
+
+  // ---- FINTECH ISRAELIENNE A FORTE COMPOSANTE QUANT ----
+  // Plus500 (CFD, cotee au LSE) tourne sur Comeet, comme Final et eToro.
+  { slug: "plus500", name: "Plus500", category: "tel_aviv", ats: "comeet", companyId: "plus500", uid: "A1.00F", token: "1AF6BCA1AF27A1A35E86B6BC50D0", careersUrl: "https://careers.plus500.com/" },
+  { slug: "riskified", name: "Riskified", category: "tel_aviv", ats: "greenhouse", token: "riskified", careersUrl: "https://job-boards.greenhouse.io/riskified" },
+  { slug: "forter", name: "Forter", category: "tel_aviv", ats: "greenhouse", token: "forter", careersUrl: "https://job-boards.greenhouse.io/forter" },
+  { slug: "fireblocks", name: "Fireblocks", category: "tel_aviv", ats: "greenhouse", token: "fireblocks", careersUrl: "https://job-boards.greenhouse.io/fireblocks" },
+  { slug: "payoneer", name: "Payoneer", category: "tel_aviv", ats: "greenhouse", token: "payoneer", careersUrl: "https://job-boards.greenhouse.io/payoneer" },
 ];
 
 export function getCompanyBySlug(slug: string): Company | undefined {

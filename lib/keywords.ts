@@ -7,6 +7,16 @@ const INTERNSHIP_TITLE_TERMS = [
   "off cycle",
   "co-op",
   "summer analyst", // certaines banques (ex: Barclays) appellent leur stage ete ainsi sans dire "intern"
+  // Hebreu: les offres israeliennes (Comeet chez Final/Discount, TopMatch
+  // chez Altshuler/Meitav/Analyst) sont redigees en hebreu et ne
+  // contiennent jamais "intern"/"stage". Sans ces termes, aucun poste
+  // etudiant israelien ne remonte.
+  // "student" s'ecrit avec les formes masculine/feminine/plurielle, et
+  // l'ecriture inclusive israelienne les colle ("סטודנט/ית") -> la racine
+  // "סטודנט" les couvre toutes par inclusion de sous-chaine.
+  "סטודנט",
+  "מתמחה", // "stagiaire" (aussi utilise pour les stages d'expertise comptable)
+  "התמחות", // "stage / internship"
 ];
 
 // Cherches a la fois dans le titre et dans location: certaines entreprises
@@ -20,6 +30,34 @@ const CITY_TERMS = [
   "nyc",
   "tel aviv",
   "tel-aviv",
+  // La finance israelienne ne tient pas dans les limites de Tel Aviv: les
+  // sieges sont eclates sur toute l'agglomeration (Meitav a Bnei Brak, ION
+  // a Herzliya, Discount a Rishon LeZion, Migdal/WorldQuant a Ramat Gan).
+  // Sans ces villes, isTargetCity serait faux et le push ne partirait pas.
+  "ramat gan",
+  "herzliya",
+  "herzliyya",
+  "bnei brak",
+  "bnei berak",
+  "rishon",
+  "petah tikva",
+  "givatayim",
+  "giv'atayim",
+  // Jerusalem n'est pas une ville "tech", mais la Bank of Israel — et donc
+  // sa division Recherche, le poste etudiant le plus quantitatif du pays —
+  // y siege. Sans elle, ces offres ne declencheraient jamais de push.
+  "jerusalem",
+  "ירושלים",
+  "israel",
+  // Idem cote hebreu (les offres TopMatch ne donnent la ville qu'en hebreu).
+  "תל אביב",
+  "רמת גן",
+  "הרצליה",
+  "בני ברק",
+  "ראשון לציון",
+  "פתח תקווה",
+  "גוש דן", // "Gush Dan" = agglomeration de Tel Aviv
+  "רמת החייל", // quartier d'affaires de Tel Aviv (Altshuler Shaham)
 ];
 
 // Fonctions clairement hors perimetre (RH, support administratif,
@@ -96,14 +134,24 @@ const OFF_CYCLE_TERMS = ["off-cycle", "off cycle"];
 
 export type PeriodStatus = "compatible" | "incompatible" | "unknown";
 
+/**
+ * Les intitules et villes remontes par les ATS sont saisis a la main et
+ * arrivent avec des espaces doubles ou insecables (vu chez Analyst IMS:
+ * location = "תל  אביב" avec deux espaces, qui ne matchait pas "תל אביב").
+ * On aplatit donc les blancs avant toute comparaison.
+ */
+function normalize(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 function findMatches(text: string, terms: string[]): string[] {
-  const lower = text.toLowerCase();
-  return terms.filter((term) => lower.includes(term));
+  const haystack = normalize(text);
+  return terms.filter((term) => haystack.includes(normalize(term)));
 }
 
 function containsAny(text: string, terms: string[]): boolean {
-  const lower = text.toLowerCase();
-  return terms.some((term) => lower.includes(term));
+  const haystack = normalize(text);
+  return terms.some((term) => haystack.includes(normalize(term)));
 }
 
 /**
