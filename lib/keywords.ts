@@ -6,6 +6,13 @@ const INTERNSHIP_TITLE_TERMS = [
   "off-cycle",
   "off cycle",
   "co-op",
+  // Terme standard chez plusieurs grandes banques/market makers (Virtu,
+  // JPMorgan, Goldman, BofA, Citi) pour un programme de stage d'hiver
+  // souvent oriente diversite. C'est un mot-valise ("Winter" + "internship")
+  // -> le "intern" qu'il contient n'est jamais isole par des frontieres de
+  // mot, il faut donc le lister explicitement.
+  "winternship",
+  "springternship",
   "summer analyst", // certaines banques (ex: Barclays) appellent leur stage ete ainsi sans dire "intern"
   // Hebreu: les offres israeliennes (Comeet chez Final/Discount, TopMatch
   // chez Altshuler/Meitav/Analyst) sont redigees en hebreu et ne
@@ -28,6 +35,14 @@ const CITY_TERMS = [
   "londres",
   "new york",
   "nyc",
+  // "Ceinture" hedge funds de la region de New York: plusieurs poids
+  // lourds (AQR, Point72, Bridgewater, Tudor) recrutent leurs stagiaires
+  // hors Manhattan, a moins d'une heure de train (Greenwich/Stamford/
+  // Westport, Connecticut). Sans ces villes, ces offres — pourtant du pur
+  // hedge fund new-yorkais — echappaient entierement au filtre "NY".
+  "greenwich, ct",
+  "stamford, ct",
+  "westport, ct",
   "tel aviv",
   "tel-aviv",
   // La finance israelienne ne tient pas dans les limites de Tel Aviv: les
@@ -124,6 +139,19 @@ const INCOMPATIBLE_MONTHS = [
 // meme si l'annee 2027 est mentionnee.
 const SUMMER_TERMS = ["summer", "été", "ete "];
 
+/**
+ * Un "Summer Internship (December-February)" est un stage d'ete de
+ * l'hemisphere sud: il chevauche janvier-juin et reste donc pertinent.
+ */
+const SOUTHERN_SUMMER_MONTHS = [
+  "december",
+  "décembre",
+  "january",
+  "janvier",
+  "february",
+  "février",
+];
+
 // "Off-cycle" designe un stage de 3-6 mois demarrant hors de la saison
 // estivale classique (souvent janvier, parfois fevrier/mars selon la
 // division) -> bon signal de compatibilite avec jan-juin 2027, mais la
@@ -159,7 +187,15 @@ const SENIOR_TITLE_TERMS = [
   "head of",
   "chief",
   "principal",
-  "partner",
+  // PAS de "partner" seul: en private equity/immobilier, "Partners" designe
+  // presque toujours le nom d'une equipe ou d'un fonds ("Strategic
+  // Partners", "Infrastructure Partners"), jamais un niveau de poste dans
+  // un titre de stage. L'a inclure excluait a tort des stages Blackstone
+  // reels ("Strategic Partners Real Estate Secondaries Summer Analyst").
+  // Un vrai poste de Partner senior ne contient de toute facon jamais
+  // "intern"/"stage" dans son titre -> le retirer ne coute rien.
+  "managing partner",
+  "general partner",
   "team lead",
   "tech lead",
   "team leader",
@@ -265,8 +301,16 @@ export function isStructurallyIntern(employmentType: string | null): boolean {
  * mentionnent aucune date (calendrier precise apres candidature) -> on
  * retourne "unknown" plutot que d'exclure a tort une offre pertinente.
  */
-export function classifyPeriod(title: string): PeriodStatus {
-  const lower = title.toLowerCase();
+export function classifyPeriod(
+  title: string,
+  employmentType: string | null = null
+): PeriodStatus {
+  // Beaucoup d'entreprises ne datent pas le titre mais exposent la periode
+  // dans leur metadonnee de contrat: Jane Street publie ses stages sous le
+  // simple intitule du metier ("Mechanical Engineer") avec un
+  // Employment Type "Summer Internship" et une Duration "May-August".
+  // Ignorer ce champ laissait passer ~30% de stages d'ete.
+  const lower = `${title} ${employmentType ?? ""}`.toLowerCase();
   const hasYear2027 = lower.includes("2027");
   const hasYear2026 = lower.includes("2026");
   const hasYear2025 = lower.includes("2025");
@@ -281,7 +325,15 @@ export function classifyPeriod(title: string): PeriodStatus {
   // signifient que ce cycle precis ne tombe pas sur jan-juin 2027.
   if (hasOtherYear && !hasYear2027) return "incompatible";
 
-  if (isSummer && !compatibleMonth) return "incompatible";
+  // "Summer" est un marqueur explicite et prioritaire: une plage
+  // "May-August" contient bien "may" (mois compatible), mais reste un stage
+  // d'ete qui deborde tres au-dela de juin. Seule exception, l'ete austral
+  // (decembre-fevrier), qui tombe justement sur la fenetre visee.
+  if (isSummer) {
+    return containsAny(lower, SOUTHERN_SUMMER_MONTHS)
+      ? "compatible"
+      : "incompatible";
+  }
   if (incompatibleMonth && !compatibleMonth) return "incompatible";
 
   if (hasYear2027 || compatibleMonth) return "compatible";
@@ -361,7 +413,7 @@ export function matchJob(
   // La ville reelle du poste peut etre dans le titre (cas Rothschild ou
   // location = siege social) ou dans location -> on cherche dans les deux.
   const cityMatches = findMatches(haystack, CITY_TERMS);
-  const periodStatus = classifyPeriod(title);
+  const periodStatus = classifyPeriod(title, employmentType);
 
   const matchedKeywords = [
     ...(structuralIntern && employmentType ? [employmentType] : []),

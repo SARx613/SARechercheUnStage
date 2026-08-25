@@ -105,6 +105,15 @@ export const COMPANIES: Company[] = [
   { slug: "five-rings", name: "Five Rings", category: "quant", ats: "greenhouse", token: "fiveringsllc", careersUrl: "https://www.fiveringscapital.com/careers" },
   { slug: "flow-traders", name: "Flow Traders", category: "quant", ats: "greenhouse", token: "flowtraders", careersUrl: "https://www.flowtraders.com/careers" },
   { slug: "man-group", name: "Man Group", category: "quant", ats: "greenhouse", token: "mangroup", careersUrl: "https://www.man.com/careers" },
+  // AQR: pionnier du "systematic value investing", programme stage d'ete a
+  // Greenwich CT tres oriente maths/stats/CS -> profil quant pur.
+  { slug: "aqr", name: "AQR Capital Management", category: "quant", ats: "greenhouse", token: "aqr", careersUrl: "https://boards.greenhouse.io/aqr" },
+  // XTX Markets: premier market maker electronique europeen (>250 Md$/jour).
+  { slug: "xtx-markets", name: "XTX Markets", category: "quant", ats: "greenhouse", token: "xtxmarketstechnologies", careersUrl: "https://www.xtxmarkets.com/careers/" },
+  // Virtu Financial: market maker electronique multi-actifs coté au NYSE,
+  // programme stage tres large (17 offres 2027 au moment de l'ajout,
+  // dont plusieurs a New York, la ville cible).
+  { slug: "virtu", name: "Virtu Financial", category: "quant", ats: "greenhouse", token: "virtu", careersUrl: "https://job-boards.greenhouse.io/virtu" },
 
   // ---- LEVER ----
   { slug: "palantir", name: "Palantir", category: "conseil_tech", ats: "lever", token: "palantir", careersUrl: "https://jobs.lever.co/palantir" },
@@ -115,7 +124,31 @@ export const COMPANIES: Company[] = [
 
   // ---- WORKDAY ----
   { slug: "rothschild", name: "Rothschild & Co", category: "banque", ats: "workday", tenant: "rothschildandco", wd: "wd3", site: "Rothschildandco_Lateral", careersUrl: "https://rothschildandco.wd3.myworkdayjobs.com/en-US/rothschildandco_lateral" },
+  // Ardian: premier fonds de private equity europeen (~200 Md$ geres,
+  // Paris + Londres). Facette workerSubType="Intern (Fixed Term) (Trainee)"
+  // exploitable -> 40 stages actifs au moment de l'ajout, largement le plus
+  // gros volume de tous les tenants Workday suivis ici.
+  { slug: "ardian", name: "Ardian", category: "asset_management", ats: "workday", tenant: "ardian", wd: "wd103", site: "ArdianCareers", careersUrl: "https://ardian.wd103.myworkdayjobs.com/en-US/ArdianCareers" },
   { slug: "blackrock", name: "BlackRock", category: "asset_management", ats: "workday", tenant: "blackrock", wd: "wd1", site: "BlackRock_Professional", careersUrl: "https://blackrock.wd1.myworkdayjobs.com/BlackRock_Professional" },
+  // Blackstone (a ne pas confondre avec BlackRock, ci-dessus): premier
+  // gestionnaire d'actifs alternatifs au monde (PE/immobilier/credit).
+  // Pas de facette workerSubType "Intern" exploitable sur ce tenant -> repli
+  // sur titre, comme Citi (categorie "Full-Time: Experienced" absente ici).
+  // Titres "Summer Analyst" / "Off Cycle Intern" deja couverts par les
+  // termes existants.
+  { slug: "blackstone", name: "Blackstone", category: "asset_management", ats: "workday", tenant: "blackstone", wd: "wd1", site: "Blackstone_Campus_Careers", careersUrl: "https://blackstone.wd1.myworkdayjobs.com/en-US/Blackstone_Campus_Careers" },
+  // Apollo Global Management: geant du private equity/credit alternatif.
+  // Tenant "athene" (nom de leur filiale assurance) et non "apollo" —
+  // piege classique Workday ou le tenant technique differe de la marque.
+  // workerSubType="Intern" directement exploitable, contrairement a
+  // Blackstone ci-dessus.
+  { slug: "apollo", name: "Apollo Global Management", category: "asset_management", ats: "workday", tenant: "athene", wd: "wd5", site: "Apollo_Careers", careersUrl: "https://athene.wd5.myworkdayjobs.com/en-US/Apollo_Careers" },
+  // Moelis & Company: banque d'affaires boutique M&A (New York + Londres).
+  // Pas de facette workerSubType sur ce tenant (uniquement "Experienced
+  // Hires" visible) -> repli sur titre, comme Citi/Blackstone. Aucun stage
+  // au moment de l'ajout (recrutement campus pas encore ouvert), mais le
+  // scraper est deja cable et cout marginal nul.
+  { slug: "moelis", name: "Moelis & Company", category: "banque", ats: "workday", tenant: "moelis", wd: "wd1", site: "Experienced-Hires", careersUrl: "https://moelis.wd1.myworkdayjobs.com/en-US/Experienced-Hires" },
   { slug: "pimco", name: "PIMCO", category: "asset_management", ats: "workday", tenant: "pimco", wd: "wd1", site: "pimco-careers", careersUrl: "https://pimco.wd1.myworkdayjobs.com/en-US/pimco-careers" },
   { slug: "morgan-stanley", name: "Morgan Stanley", category: "banque", ats: "workday", tenant: "ms", wd: "wd5", site: "External", careersUrl: "https://ms.wd5.myworkdayjobs.com/External" },
   { slug: "barclays", name: "Barclays", category: "banque", ats: "workday", tenant: "barclays", wd: "wd3", site: "External_Career_Site_Barclays", careersUrl: "https://barclays.wd3.myworkdayjobs.com/External_Career_Site_Barclays" },
@@ -128,6 +161,23 @@ export const COMPANIES: Company[] = [
   { slug: "etoro", name: "eToro", category: "tel_aviv", ats: "comeet", companyId: "etoro", uid: "41.009", token: "14952452466D3DB7B61495240B91", careersUrl: "https://www.comeet.com/jobs/etoro/41.009" },
 
   // ---- MANUAL (pas d'API JSON fiable, pas de scraping full-JS automatisé) ----
+  // KKR: tenant Workday introuvable derriere le site public (probe direct
+  // sans succes, contrairement a Apollo/Blackstone).
+  { slug: "kkr", name: "KKR", category: "asset_management", ats: "manual", careersUrl: "https://www.kkr.com/careers/student-careers" },
+  // Boutiques M&A (advisory pur, pas de trading): Evercore et Centerview
+  // tournent sur des portails proprietaires/JS-lourds (evercore.tal.net,
+  // meme famille de plateforme que Lazard ci-dessous); PJT bloque le
+  // scraping (403).
+  { slug: "evercore", name: "Evercore", category: "banque", ats: "manual", careersUrl: "https://www.evercore.com/careers/students-graduates/students-graduates-europe-asia/" },
+  { slug: "centerview", name: "Centerview Partners", category: "banque", ats: "manual", careersUrl: "https://www.centerview.com/careers/" },
+  { slug: "pjt-partners", name: "PJT Partners", category: "banque", ats: "manual", careersUrl: "https://www.pjtpartners.com/careers" },
+  { slug: "natixis", name: "Natixis CIB", category: "banque", ats: "manual", careersUrl: "https://recrutement.natixis.com/en/our-job-offers" },
+  // Systematica: fonds quant systematique (heritage BlueCrest), Londres.
+  // API Pinpoint publique et structuree, mais seulement 2 postes ouverts
+  // (aucun stage) au moment de l'ajout -> pas assez de volume pour
+  // justifier un scraper dedie tout de suite; a webhooker si le volume
+  // augmente.
+  { slug: "systematica", name: "Systematica Investments", category: "quant", ats: "manual", careersUrl: "https://systematica.pinpointhq.com/" },
   { slug: "mckinsey", name: "McKinsey", category: "conseil_tech", ats: "manual", careersUrl: "https://www.mckinsey.com/careers/search-jobs" },
   { slug: "bcg", name: "BCG", category: "conseil_tech", ats: "manual", careersUrl: "https://careers.bcg.com/global/en/search-results" },
   { slug: "bain", name: "Bain & Company", category: "conseil_tech", ats: "manual", careersUrl: "https://www.bain.com/careers/find-a-role/" },
