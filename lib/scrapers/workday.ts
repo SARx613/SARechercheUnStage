@@ -41,6 +41,27 @@ function findInternFacetId(facets: WorkdayFacet[] | undefined): string | null {
   return value?.id ?? null;
 }
 
+/**
+ * locationsText vaut parfois "2 Locations" / "3 Locations" au lieu du nom
+ * de ville quand Workday agrege plusieurs sites: le lieu reel disparait
+ * alors du texte libre, et une offre a Londres ou New York peut echapper
+ * au filtre de ville cible. externalPath contient toujours le site
+ * *principal* de l'offre en premier segment (ex:
+ * "/job/New-York-NY-USA/Senior-Associate..."), qu'on utilise en repli.
+ */
+function resolveLocation(job: WorkdayJobPosting): string | null {
+  const text = job.locationsText ?? null;
+  if (text && !/^\d+\s+locations?$/i.test(text.trim())) return text;
+
+  const primarySegment = job.externalPath.split("/")[2];
+  if (!primarySegment) return text;
+  const decoded = decodeURIComponent(primarySegment).replace(/-/g, " ").trim();
+  // Le segment principal peut lui-meme etre generique ("Remote",
+  // "Multiple-Locations") -> dans ce cas autant garder le texte agrege
+  // original plutot qu'un remplacement tout aussi peu informatif.
+  return decoded || text;
+}
+
 export async function scrapeWorkday(
   company: WorkdayCompany
 ): Promise<RawJob[]> {
@@ -86,7 +107,7 @@ export async function scrapeWorkday(
         jobs.push({
           externalId: job.externalPath,
           title: job.title,
-          location: job.locationsText ?? null,
+          location: resolveLocation(job),
           url: jobUrl(job.externalPath),
           postedAt: null,
           employmentType: "Intern",
@@ -114,7 +135,7 @@ export async function scrapeWorkday(
         jobs.push({
           externalId: job.externalPath,
           title: job.title,
-          location: job.locationsText ?? null,
+          location: resolveLocation(job),
           url: jobUrl(job.externalPath),
           postedAt: null,
           employmentType: null,

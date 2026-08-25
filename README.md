@@ -82,6 +82,22 @@ scraper extrait le signal le plus structuré disponible sur sa plateforme :
 
 Le titre reste un filet de sécurité en repli.
 
+#### Période : lire les métadonnées, pas seulement le titre
+
+Beaucoup d'entreprises ne datent pas le titre mais exposent la période dans
+leur métadonnée de contrat. Jane Street publie ainsi ses stages sous le
+simple intitulé du métier (« Mechanical Engineer ») avec
+`Employment Type: "Summer Internship"` et `Duration: "May-August"` — invisible
+pour un classificateur qui ne lit que le titre, ce qui laissait passer ~30 %
+de stages d'été. Le scraper Greenhouse concatène donc `Employment Type` **et**
+`Duration` (au lieu de ne garder que le premier renseigné), et
+`classifyPeriod()` lit ce champ en plus du titre.
+
+Le marqueur « summer » y est **prioritaire** : une plage `May-August` contient
+« may », un mois compatible, ce qui neutralisait la détection. Seule exception,
+`December-February` — l'été austral, qui tombe justement dans la fenêtre
+janvier-juin.
+
 #### Filtrage par niveau de poste
 
 Deux pièges rendaient la liste inutilisable et sont désormais traités dans
@@ -106,11 +122,27 @@ Le résultat est stocké dans `job_postings.seniority_status`
 (`junior` / `senior` / `unknown`) et pilotable depuis la case **« Masquer les
 postes séniors »** du tableau, active par défaut.
 
+#### Rejouer le classement
+
 Les offres déjà en base sont **reclassées automatiquement** : le cron
-réévalue les annonces déjà connues au lieu de les ignorer, sinon une offre
-mal classée par une version antérieure des règles le resterait
-indéfiniment. Le compteur `totalReclassified` du résumé de scrape indique
-combien de lignes ont changé de classement.
+réévalue les annonces déjà connues au lieu de les ignorer. Le compteur
+`totalReclassified` du résumé de scrape indique combien de lignes ont changé.
+
+Cela ne suffit pourtant pas : une annonce retirée d'un board (ou passée hors
+du plafond de 300 offres du repli Workday) n'est plus jamais recroisée et
+garderait indéfiniment le classement d'une version antérieure des règles.
+[`lib/scripts/reclassify.ts`](lib/scripts/reclassify.ts) rejoue donc le
+classement sur **toute** la table, à partir des champs déjà stockés et sans
+aucun appel réseau vers les ATS.
+
+**À relancer après chaque modification de `lib/keywords.ts`** :
+
+```bash
+npm run reclassify
+```
+
+(Le bundle intermédiaire doit rester dans le projet — sorti dans `/tmp`, Node
+ne résout plus `node_modules`. Il est ignoré par git.)
 
 #### Offres israéliennes
 

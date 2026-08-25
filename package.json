@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "reclassify": "esbuild lib/scripts/run-reclassify.ts --bundle --platform=node --format=esm --packages=external --outfile=.reclassify.mjs --log-level=error && node .reclassify.mjs",
+    "scrape": "esbuild lib/scripts/run-scrape.ts --bundle --platform=node --format=esm --packages=external --outfile=.scrape.mjs --log-level=error && node .scrape.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
