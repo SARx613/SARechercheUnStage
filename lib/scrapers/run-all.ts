@@ -7,6 +7,7 @@ import { scrapeGreenhouse } from "./greenhouse";
 import { scrapeLever } from "./lever";
 import { scrapeWorkday } from "./workday";
 import { scrapeComeet } from "./comeet";
+import { scrapeTopmatch } from "./topmatch";
 import type { RawJob } from "./types";
 import { eq, and } from "drizzle-orm";
 
@@ -22,6 +23,8 @@ async function scrapeOne(company: Company): Promise<RawJob[]> {
       return scrapeWorkday(company);
     case "comeet":
       return scrapeComeet(company);
+    case "topmatch":
+      return scrapeTopmatch(company);
     case "html_static":
     case "manual":
       return [];
