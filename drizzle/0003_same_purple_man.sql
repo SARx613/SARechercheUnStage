@@ -1,0 +1,1 @@
+ALTER TABLE "job_postings" ADD COLUMN "seniority_status" varchar(20) DEFAULT 'unknown' NOT NULL;

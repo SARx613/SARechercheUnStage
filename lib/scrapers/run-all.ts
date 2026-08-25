@@ -64,6 +64,8 @@ export interface RunAllSummary {
   totalJobsFound: number;
   totalNewJobs: number;
   totalNewMatches: number;
+  /** Offres deja connues dont le classement a change (regles mises a jour). */
+  totalReclassified: number;
   errors: { company: string; message: string }[];
 }
 
@@ -78,6 +80,7 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
     totalJobsFound: 0,
     totalNewJobs: 0,
     totalNewMatches: 0,
+    totalReclassified: 0,
     errors: [],
   };
 
@@ -93,6 +96,7 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
           const rawJobs = await scrapeOne(company);
           let newJobs = 0;
           let newMatches = 0;
+          let reclassified = 0;
 
           for (const job of rawJobs) {
             const existing = await db.query.jobPostings.findFirst({
@@ -101,10 +105,41 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
                 eq(jobPostings.externalId, job.externalId)
               ),
             });
-            if (existing) continue;
 
-            const { isMatch, isTargetCity, periodStatus, matchedKeywords } =
-              matchJob(job.title, job.location, job.employmentType);
+            const {
+              isMatch,
+              isTargetCity,
+              periodStatus,
+              seniorityStatus,
+              matchedKeywords,
+            } = matchJob(job.title, job.location, job.employmentType);
+
+            if (existing) {
+              // L'offre est deja connue: on ne la recompte pas et on ne
+              // renotifie pas, mais on rejoue le classement. Sans cela une
+              // offre mal classee par une version anterieure des regles le
+              // resterait indefiniment (ex: les "Vice President" pris pour
+              // des stages tant que "intern" matchait dans "Internal").
+              if (
+                existing.isMatch !== isMatch ||
+                existing.isTargetCity !== isTargetCity ||
+                existing.periodStatus !== periodStatus ||
+                existing.seniorityStatus !== seniorityStatus
+              ) {
+                await db
+                  .update(jobPostings)
+                  .set({
+                    isMatch,
+                    isTargetCity,
+                    periodStatus,
+                    seniorityStatus,
+                    matchedKeywords,
+                  })
+                  .where(eq(jobPostings.id, existing.id));
+                reclassified++;
+              }
+              continue;
+            }
 
             await db.insert(jobPostings).values({
               companyId: companyRow.id,
@@ -119,6 +154,7 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
               isMatch,
               isTargetCity,
               periodStatus,
+              seniorityStatus,
             });
 
             newJobs++;
@@ -151,6 +187,7 @@ export async function runAllScrapers(): Promise<RunAllSummary> {
           summary.totalJobsFound += rawJobs.length;
           summary.totalNewJobs += newJobs;
           summary.totalNewMatches += newMatches;
+          summary.totalReclassified += reclassified;
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           await db.insert(scrapeRuns).values({

@@ -6,7 +6,7 @@ management et le conseil, sur Paris, Londres, New York et Tel Aviv.
 
 Chaque jour, un cron Vercel interroge directement les APIs publiques des
 plateformes de recrutement (Greenhouse, Lever, Workday, Comeet, TopMatch) de
-~76 entreprises cibles, détecte les nouvelles offres de stage et notifie
+~61 entreprises cibles, détecte les nouvelles offres de stage et notifie
 l'utilisateur en push (PWA) — pas besoin de vérifier chaque site à la main.
 
 **Production** : https://job-tracker-ashy-beta.vercel.app
@@ -22,16 +22,16 @@ l'utilisateur en push (PWA) — pas besoin de vérifier chaque site à la main.
 
 ## Fonctionnement du scraping
 
-37 entreprises sont scrapées automatiquement via API JSON publique (pas de
+31 entreprises sont scrapées automatiquement via API JSON publique (pas de
 scraping HTML fragile) :
 
 | ATS | Entreprises (exemples) |
 |---|---|
-| Greenhouse | Jane Street, QRT, Point72, Optiver, Jump Trading, DRW, Hudson River Trading, Man Group, Riskified, Forter, Fireblocks, Payoneer... |
+| Greenhouse | Jane Street, QRT, Point72, Optiver, Jump Trading, DRW, Hudson River Trading, Man Group, Pagaya... |
 | Lever | Palantir |
 | Workday | Morgan Stanley, Barclays, Deutsche Bank, BlackRock, PIMCO, Rothschild & Co, Oliver Wyman, Citi, WorldQuant |
 | Comeet | Final, Israel Discount Bank, Plus500, eToro |
-| TopMatch | Altshuler Shaham, Meitav, Analyst IMS, Migdal |
+| TopMatch | Altshuler Shaham, Meitav |
 
 ### Comeet : le token public est obligatoire
 
@@ -54,7 +54,7 @@ vérification explicite dans [`lib/scrapers/topmatch.ts`](lib/scrapers/topmatch.
 La liste complète, avec les identifiants techniques (board token, tenant
 Workday, etc.), est dans [`lib/companies.ts`](lib/companies.ts).
 
-39 autres entreprises (McKinsey, BCG, Bain, Goldman Sachs, J.P. Morgan,
+30 autres entreprises (McKinsey, BCG, Bain, Goldman Sachs, J.P. Morgan,
 Citadel, D.E. Shaw, Two Sigma, BNP Paribas, Société Générale, Bank Leumi,
 Bank Hapoalim, Bank of Israel, TASE...) n'ont pas d'API JSON publique fiable
 (Taleo, Talentsoft, SPA maison JS-lourdes). Elles restent listées avec leur
@@ -81,6 +81,36 @@ scraper extrait le signal le plus structuré disponible sur sa plateforme :
 - **TopMatch** : aucun champ de type de contrat → repli sur le titre.
 
 Le titre reste un filet de sécurité en repli.
+
+#### Filtrage par niveau de poste
+
+Deux pièges rendaient la liste inutilisable et sont désormais traités dans
+[`lib/keywords.ts`](lib/keywords.ts) :
+
+1. **Matching par mot entier.** En inclusion simple, `"intern"` matche
+   `"INTERNational"` et `"INTERNal"` — d'où des offres comme *« Internal
+   Audit – Business Audit Associate/Vice President »* (BlackRock) classées
+   comme stages. Les termes latins sont donc comparés avec des frontières de
+   mot ; les termes hébreux gardent l'inclusion simple, `\b` se basant sur
+   `[A-Za-z0-9_]` et ne fonctionnant pas avec l'hébreu.
+2. **Exclusion des postes séniors.** `classifySeniority()` écarte les
+   intitulés d'encadrement (VP, Director, Head of, Senior, Principal,
+   Managing Director, Team Lead, `בכיר`, `מנהל`...). La liste est
+   volontairement conservatrice : pas de `lead` seul (« Lead Generation »
+   est un poste marketing), pas de `md`, et pas d'`analyst` qui désigne le
+   poste d'entrée en banque d'affaires. Les tournures où *senior* qualifie
+   l'année d'études et non le poste (« Summer Analyst – Rising Seniors »)
+   sont neutralisées au préalable.
+
+Le résultat est stocké dans `job_postings.seniority_status`
+(`junior` / `senior` / `unknown`) et pilotable depuis la case **« Masquer les
+postes séniors »** du tableau, active par défaut.
+
+Les offres déjà en base sont **reclassées automatiquement** : le cron
+réévalue les annonces déjà connues au lieu de les ignorer, sinon une offre
+mal classée par une version antérieure des règles le resterait
+indéfiniment. Le compteur `totalReclassified` du résumé de scrape indique
+combien de lignes ont changé de classement.
 
 #### Offres israéliennes
 
@@ -140,7 +170,7 @@ app/
   login/                # page de connexion par mot de passe
 proxy.ts                # protège toutes les routes sauf /login et /api/cron
 lib/
-  companies.ts          # config des 76 entreprises cibles
+  companies.ts          # config des 61 entreprises cibles
   keywords.ts            # logique de matching stage/ville
   scrapers/               # un module par type d'ATS
   db/                      # schéma Drizzle + client Neon
@@ -157,7 +187,6 @@ public/
 
 - Les entreprises `ats: "manual"` dans `lib/companies.ts` ne sont pas
   scrapées automatiquement (voir plus haut).
-- Le tenant TopMatch de Migdal est valide mais renvoie 0 offre pour l'instant.
 - Les tokens Comeet et les `affiliateGUID` TopMatch sont publics mais figés
   en dur : si une entreprise régénère le sien, son scraper tombera en erreur
   (visible dans `scrape_runs`) et il faudra le relire sur sa page carrière.
