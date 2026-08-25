@@ -184,9 +184,8 @@ export const COMPANIES: Company[] = [
   // Sphera: gerant long/short equity israelien de reference (fonde en 2004).
   { slug: "sphera-funds", name: "Sphera Funds Management", category: "quant", ats: "manual", careersUrl: "https://spherafund.com/contact-us/", note: "Pas de page carriere publique: passer par le formulaire de contact." },
   // Silver Castle: gestion alternative (dont fonds bitcoin), cotee au TASE.
-  { slug: "silver-castle", name: "Silver Castle", category: "quant", ats: "manual", careersUrl: "https://silvercl.com/", note: "Pas de page carriere publique: contact via le site." },
 
-  // ---- BANQUES ISRAELIENNES & INFRASTRUCTURE DE MARCHE ----
+  // ---- BANQUES & INFRASTRUCTURE DE MARCHE ----
   // Bank of Israel: la banque centrale tourne sur SuccessFactors, dont la
   // recherche accepte un mot-cle en parametre d'URL -> on pointe direct sur
   // les postes etudiants. La division Recherche (analyse monetaire,
@@ -197,33 +196,20 @@ export const COMPANIES: Company[] = [
   { slug: "discount-bank", name: "Israel Discount Bank", category: "banque", ats: "comeet", companyId: "dbank", uid: "F8.004", token: "8F435B847A035B802CC42CC4509447A035B8", careersUrl: "https://www.comeet.com/jobs/dbank/F8.004" },
   { slug: "bank-leumi", name: "Bank Leumi", category: "banque", ats: "manual", careersUrl: "https://www.leumi.co.il/he/leumi_main/searchjobs", note: "Moteur de recherche maison sans filtre par URL: taper 'סטודנט' dans le champ mot-cle. Leumi donne la priorite aux etudiants." },
   { slug: "bank-hapoalim", name: "Bank Hapoalim", category: "banque", ats: "manual", careersUrl: "https://www.bankhapoalim.co.il/forms/he/jobs-site/lobby", note: "Postes etudiants recurrents en salle des marches (dealer ni'v zarim) pour etudiants en eco/gestion. Contact: poalim.jobs@poalim.co.il." },
-  { slug: "mizrahi-tefahot", name: "Mizrahi Tefahot", category: "banque", ats: "manual", careersUrl: "https://www.mizrahi-tefahot.co.il/", note: "Section carriere accessible depuis le pied de page; pas d'URL stable." },
-  { slug: "fibi", name: "First International Bank of Israel", category: "banque", ats: "manual", careersUrl: "https://www.fibi.co.il/Career" },
   { slug: "tase", name: "Tel Aviv Stock Exchange (TASE)", category: "banque", ats: "manual", careersUrl: "https://www.tase.co.il/he/content/career/careers" },
 
-  // ---- MAISONS D'INVESTISSEMENT / GESTION D'ACTIFS ----
-  // Quatre d'entre elles partagent l'ATS israelien TopMatch (redmatch),
-  // qui expose une API JSON publique -> scrapees automatiquement.
+  // ---- MAISONS D'INVESTISSEMENT ----
+  // Les deux plus grosses maisons d'investissement du pays. Toutes deux sur
+  // TopMatch (redmatch), l'ATS israelien qui expose une API JSON publique
+  // -> scrapees automatiquement.
   { slug: "altshuler-shaham", name: "Altshuler Shaham", category: "asset_management", ats: "topmatch", tenant: "AltshulerShaham", affiliateGuid: "15FA3B25-3742-44BC-A785-86EE96CBADCF", careersUrl: "https://careers.topmatch.co.il/AltshulerShaham/" },
   { slug: "meitav", name: "Meitav", category: "asset_management", ats: "topmatch", tenant: "Meitav", affiliateGuid: "05C69BAD-26F0-48EE-A059-4961B79987F1", careersUrl: "https://careers.topmatch.co.il/Meitav/" },
-  { slug: "analyst-ims", name: "Analyst IMS", category: "asset_management", ats: "topmatch", tenant: "Analyst", affiliateGuid: "48D0F6AE-9E14-4A81-B0DE-4C4A1A185109", careersUrl: "https://careers.topmatch.co.il/Analyst/" },
-  { slug: "migdal", name: "Migdal", category: "asset_management", ats: "topmatch", tenant: "Migdal", affiliateGuid: "E0F5FB5B-82F6-4862-8E00-15A883389347", careersUrl: "https://careers.topmatch.co.il/Migdal/" },
-  { slug: "ibi", name: "IBI Investment House", category: "asset_management", ats: "manual", careersUrl: "https://www.ibi.co.il/career/" },
-  { slug: "psagot", name: "Psagot", category: "asset_management", ats: "manual", careersUrl: "https://www.psagot.co.il/en/careers/" },
-  { slug: "phoenix", name: "The Phoenix (Excellence)", category: "asset_management", ats: "manual", careersUrl: "https://www.fnx.co.il/career/" },
   // Harel recrute regulierement des etudiants au departement actuariat
   // (tarification assurance generale) -> profil quantitatif.
-  { slug: "harel", name: "Harel Insurance & Finance", category: "asset_management", ats: "manual", careersUrl: "https://www.harel-group.co.il/careers", note: "Postes etudiants recurrents en actuariat (tarification) — le plus quant chez eux." },
-  { slug: "yelin-lapidot", name: "Yelin Lapidot", category: "asset_management", ats: "manual", careersUrl: "https://www.yl-invest.co.il/wanted/" },
-  { slug: "more-investment", name: "More Investment House", category: "asset_management", ats: "manual", careersUrl: "https://www.moreinvest.co.il/" },
 
-  // ---- FINTECH ISRAELIENNE A FORTE COMPOSANTE QUANT ----
+  // ---- PLATEFORMES DE TRADING ----
   // Plus500 (CFD, cotee au LSE) tourne sur Comeet, comme Final et eToro.
   { slug: "plus500", name: "Plus500", category: "tel_aviv", ats: "comeet", companyId: "plus500", uid: "A1.00F", token: "1AF6BCA1AF27A1A35E86B6BC50D0", careersUrl: "https://careers.plus500.com/" },
-  { slug: "riskified", name: "Riskified", category: "tel_aviv", ats: "greenhouse", token: "riskified", careersUrl: "https://job-boards.greenhouse.io/riskified" },
-  { slug: "forter", name: "Forter", category: "tel_aviv", ats: "greenhouse", token: "forter", careersUrl: "https://job-boards.greenhouse.io/forter" },
-  { slug: "fireblocks", name: "Fireblocks", category: "tel_aviv", ats: "greenhouse", token: "fireblocks", careersUrl: "https://job-boards.greenhouse.io/fireblocks" },
-  { slug: "payoneer", name: "Payoneer", category: "tel_aviv", ats: "greenhouse", token: "payoneer", careersUrl: "https://job-boards.greenhouse.io/payoneer" },
 ];
 
 export function getCompanyBySlug(slug: string): Company | undefined {

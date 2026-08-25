@@ -44,6 +44,9 @@ export const jobPostings = pgTable(
     periodStatus: varchar("period_status", { length: 20 })
       .notNull()
       .default("unknown"),
+    seniorityStatus: varchar("seniority_status", { length: 20 })
+      .notNull()
+      .default("unknown"),
   },
   (t) => [uniqueIndex("company_external_id_idx").on(t.companyId, t.externalId)]
 );

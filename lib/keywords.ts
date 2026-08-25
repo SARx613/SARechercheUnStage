@@ -132,6 +132,65 @@ const SUMMER_TERMS = ["summer", "été", "ete "];
 // "compatible" plutot que pour ecraser une annee/mois deja detectee.
 const OFF_CYCLE_TERMS = ["off-cycle", "off cycle"];
 
+/**
+ * Intitules qui designent un poste d'encadrement ou confirme. Un stage
+ * n'est jamais l'un de ceux-la: des qu'un de ces termes apparait, l'offre
+ * est ecartee meme si le titre contient par ailleurs "intern"/"stage"
+ * (cas reel: "Internal Audit - Business Audit Associate/Vice President").
+ *
+ * Volontairement conservateur, on ne met QUE des termes non ambigus:
+ *  - pas de "lead" seul ("Lead Generation" est un poste marketing junior),
+ *    seulement "team lead" / "tech lead";
+ *  - pas de "md" (deux lettres, trop de collisions), seulement
+ *    "managing director";
+ *  - pas d'"analyst", qui designe le poste d'entree en banque d'affaires.
+ */
+const SENIOR_TITLE_TERMS = [
+  "vp",
+  "svp",
+  "evp",
+  "avp",
+  "vice president",
+  "vice-president",
+  "president",
+  "director",
+  "directeur",
+  "managing director",
+  "head of",
+  "chief",
+  "principal",
+  "partner",
+  "team lead",
+  "tech lead",
+  "team leader",
+  "manager",
+  "responsable",
+  "executive",
+  "experienced hire",
+  "senior",
+  "sr.",
+  // Hebreu: "בכיר" = senior, "מנהל" = manager/directeur.
+  "בכיר",
+  "מנהל",
+];
+
+/**
+ * "Senior" ne designe pas toujours un niveau de poste: dans le recrutement
+ * campus americain, "senior" est l'annee d'etudes (equivalent M2). Une offre
+ * "Summer Analyst - Open to Seniors" est bien un stage. On neutralise donc
+ * ces tournures avant de chercher les marqueurs de seniorite.
+ */
+const STUDENT_SENIOR_PHRASES = [
+  "senior year",
+  "senior students",
+  "senior student",
+  "seniors",
+  "rising senior",
+  "juniors and seniors",
+];
+
+export type SeniorityStatus = "junior" | "senior" | "unknown";
+
 export type PeriodStatus = "compatible" | "incompatible" | "unknown";
 
 /**
@@ -144,14 +203,40 @@ function normalize(text: string): string {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Compare un terme au texte SANS matcher au milieu d'un mot.
+ *
+ * Indispensable: en inclusion simple, "intern" matche "INTERNational" et
+ * "INTERNal" — ce qui faisait remonter "Internal Audit – Business Audit
+ * Associate/Vice President" (BlackRock) comme une offre de stage. Le "s?"
+ * final couvre les pluriels ("interns", "stages").
+ *
+ * On ne peut pas utiliser \b: en JS il se base sur [A-Za-z0-9_], donc les
+ * lettres hebraiques comptent comme des separateurs et "\bסטודנט\b" ne
+ * matcherait jamais "סטודנט/ית". Les termes sans caractere latin gardent
+ * donc l'inclusion simple — ce qui est le bon comportement en hebreu, ou
+ * l'ecriture inclusive colle les suffixes a la racine.
+ */
+function termMatches(haystack: string, term: string): boolean {
+  const t = normalize(term);
+  if (!/[a-z0-9]/.test(t)) return haystack.includes(t);
+  return new RegExp(`(?<![a-z0-9])${escapeRegExp(t)}s?(?![a-z0-9])`).test(
+    haystack
+  );
+}
+
 function findMatches(text: string, terms: string[]): string[] {
   const haystack = normalize(text);
-  return terms.filter((term) => haystack.includes(normalize(term)));
+  return terms.filter((term) => termMatches(haystack, term));
 }
 
 function containsAny(text: string, terms: string[]): boolean {
   const haystack = normalize(text);
-  return terms.some((term) => haystack.includes(normalize(term)));
+  return terms.some((term) => termMatches(haystack, term));
 }
 
 /**
@@ -162,13 +247,16 @@ function containsAny(text: string, terms: string[]): boolean {
  */
 export function isStructurallyIntern(employmentType: string | null): boolean {
   if (!employmentType) return false;
-  const lower = employmentType.toLowerCase();
-  return (
-    lower.includes("intern") ||
-    lower.includes("co-op") ||
-    lower.includes("coop") ||
-    lower.includes("stagiaire")
-  );
+  // Meme piege qu'ailleurs: un employmentType "Internal" ou "International
+  // Assignment" ne doit pas passer pour un stage -> comparaison par mot.
+  return containsAny(employmentType, [
+    "intern",
+    "internship",
+    "co-op",
+    "coop",
+    "stagiaire",
+    "student",
+  ]);
 }
 
 /**
@@ -207,6 +295,37 @@ export function classifyPeriod(title: string): PeriodStatus {
   return "unknown";
 }
 
+/**
+ * Classe le niveau d'anciennete attendu a partir du titre et, quand la
+ * plateforme en expose un, du niveau d'experience structure
+ * (Comeet: experience_level).
+ */
+export function classifySeniority(
+  title: string,
+  employmentType: string | null = null
+): SeniorityStatus {
+  // On retire d'abord les tournures ou "senior" qualifie l'etudiant et non
+  // le poste, sinon un "Summer Analyst - Rising Seniors" serait ecarte.
+  let cleaned = normalize(title);
+  for (const phrase of STUDENT_SENIOR_PHRASES) {
+    cleaned = cleaned.split(phrase).join(" ");
+  }
+
+  if (containsAny(cleaned, SENIOR_TITLE_TERMS)) return "senior";
+  if (employmentType && containsAny(employmentType, SENIOR_TITLE_TERMS))
+    return "senior";
+
+  if (
+    isStructurallyIntern(employmentType) ||
+    containsAny(title, INTERNSHIP_TITLE_TERMS) ||
+    containsAny(cleaned, ["junior", "entry level", "entry-level", "graduate"])
+  ) {
+    return "junior";
+  }
+
+  return "unknown";
+}
+
 export function matchJob(
   title: string,
   location: string | null,
@@ -215,18 +334,24 @@ export function matchJob(
   isMatch: boolean;
   isTargetCity: boolean;
   periodStatus: PeriodStatus;
+  seniorityStatus: SeniorityStatus;
   matchedKeywords: string[];
 } {
   const haystack = `${title} ${location ?? ""}`;
+  const seniorityStatus = classifySeniority(title, employmentType);
 
   if (
     containsAny(title, EXCLUDED_TITLE_TERMS) ||
-    containsAny(title, US_CLEARANCE_TERMS)
+    containsAny(title, US_CLEARANCE_TERMS) ||
+    // Un poste d'encadrement n'est jamais un stage, quoi que dise le reste
+    // du titre.
+    seniorityStatus === "senior"
   ) {
     return {
       isMatch: false,
       isTargetCity: false,
       periodStatus: "unknown",
+      seniorityStatus,
       matchedKeywords: [],
     };
   }
@@ -247,5 +372,11 @@ export function matchJob(
   const isMatch = structuralIntern || titleInternMatches.length > 0;
   const isTargetCity = cityMatches.length > 0;
 
-  return { isMatch, isTargetCity, periodStatus, matchedKeywords };
+  return {
+    isMatch,
+    isTargetCity,
+    periodStatus,
+    seniorityStatus,
+    matchedKeywords,
+  };
 }

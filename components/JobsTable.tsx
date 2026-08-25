@@ -23,6 +23,7 @@ interface JobRow {
   isMatch: boolean;
   isTargetCity: boolean;
   periodStatus: "compatible" | "incompatible" | "unknown";
+  seniorityStatus: "junior" | "senior" | "unknown";
   companyName: string;
   companyCategory: string;
   status: string | null;
@@ -59,6 +60,9 @@ export default function JobsTable() {
   const [cityFilter, setCityFilter] = useState<string>("target");
   const [matchOnly, setMatchOnly] = useState(true);
   const [hidePastPeriod, setHidePastPeriod] = useState(true);
+  // Masque les postes d'encadrement/confirmes (VP, Director, Head of...),
+  // inaccessibles avant la fin du diplome.
+  const [hideSenior, setHideSenior] = useState(true);
   const [search, setSearch] = useState("");
 
   const CITY_FILTERS: { value: string; label: string; terms: string[] }[] = [
@@ -90,6 +94,7 @@ export default function JobsTable() {
     return jobs.filter((j) => {
       if (matchOnly && !j.isMatch) return false;
       if (hidePastPeriod && j.periodStatus === "incompatible") return false;
+      if (hideSenior && j.seniorityStatus === "senior") return false;
       if (categoryFilter !== "all" && j.companyCategory !== categoryFilter)
         return false;
       if (cityFilter === "target" && !j.isTargetCity) return false;
@@ -104,7 +109,15 @@ export default function JobsTable() {
       }
       return true;
     });
-  }, [jobs, matchOnly, hidePastPeriod, categoryFilter, cityFilter, search]);
+  }, [
+    jobs,
+    matchOnly,
+    hidePastPeriod,
+    hideSenior,
+    categoryFilter,
+    cityFilter,
+    search,
+  ]);
 
   const columns = useMemo(
     () => [
@@ -259,6 +272,15 @@ export default function JobsTable() {
             className="accent-[#367afd]"
           />
           Masquer les périodes incompatibles
+        </label>
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            checked={hideSenior}
+            onChange={(e) => setHideSenior(e.target.checked)}
+            className="accent-[#367afd]"
+          />
+          Masquer les postes séniors
         </label>
         <span className="ml-auto text-sm text-neutral-400">
           {filteredJobs.length} offre{filteredJobs.length !== 1 ? "s" : ""}
