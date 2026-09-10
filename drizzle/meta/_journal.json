@@ -29,6 +29,13 @@
       "when": 1787648652339,
       "tag": "0003_same_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789026143016,
+      "tag": "0004_add_networking_contacts",
+      "breakpoints": true
     }
   ]
 }
