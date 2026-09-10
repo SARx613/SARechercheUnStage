@@ -73,6 +73,28 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
     .defaultNow(),
 });
 
+export const networkingContacts = pgTable("networking_contacts", {
+  id: serial("id").primaryKey(),
+  firmName: text("firm_name").notNull(),
+  division: text("division"),
+  city: varchar("city", { length: 20 }).notNull().default("other"),
+  contactName: text("contact_name"),
+  title: text("title"),
+  linkedinUrl: text("linkedin_url"),
+  email: text("email"),
+  channel: varchar("channel", { length: 20 }).notNull().default("linkedin_inmail"),
+  status: varchar("status", { length: 30 }).notNull().default("a_faire"),
+  dateSent: timestamp("date_sent", { withTimezone: true }),
+  followUpAt: timestamp("follow_up_at", { withTimezone: true }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const scrapeRuns = pgTable("scrape_runs", {
   id: serial("id").primaryKey(),
   companyId: integer("company_id").references(() => companies.id, {
