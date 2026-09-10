@@ -1,5 +1,6 @@
 import JobsTable from "@/components/JobsTable";
 import PushToggle from "@/components/PushToggle";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -11,7 +12,12 @@ export default function Home() {
             Stage Tracker
           </h1>
         </div>
-        <PushToggle />
+        <div className="flex items-center gap-4">
+          <Link href="/networking" className="text-sm text-[#367afd] hover:underline">
+            Networking →
+          </Link>
+          <PushToggle />
+        </div>
       </header>
       <JobsTable />
     </div>
